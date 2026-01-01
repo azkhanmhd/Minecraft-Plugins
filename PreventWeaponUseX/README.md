@@ -37,20 +37,26 @@ After first run, edit `plugins/PreventWeaponUseX/config.yml`:
 enabled: true
 debug: false
 restrictions:
-  - items:
+  restriction1:
+    items:
       - "MACE"
     worlds:
       - "world"
-      - "void"
+      - "RPGWorld"
     actions:
       - "vanilla all"
-  - items:
+    feedbackmsg: false
+    feedbackcooldown: 1
+  restriction2:
+    items:
       - "%any%_SPEAR"
     worlds:
-      - "rpg"
+      - "RPGWorld"
       - "world"
     actions:
       - "vanilla all"
+    feedbackmsg: false
+    feedbackcooldown: 1
 ```
 
 ### Configuration Explained
@@ -61,10 +67,12 @@ restrictions:
   - **items**: List of material names or patterns to block
   - **worlds**: List of world names where these items are blocked
   - **actions**: List of action types to block (defaults to `vanilla all` if not specified)
-    - `vanilla all` - Blocks all vanilla interactions (right-click and left-click)
+    - `vanilla all` - Blocks all vanilla interactions (right-click, left-click, and attacking entities)
     - `vanilla rightclick` - Blocks only right-click actions
     - `vanilla leftclick` - Blocks only left-click actions
     - `all` - Blocks everything (use, attack, place, drop, consume)
+  - **feedbackmsg**: Set to `true` to send blocked messages to players, `false` for silent blocking (default: `false`)
+  - **feedbackcooldown**: Seconds between feedback messages to prevent spam (default: `1`)
 
 ### Item Patterns
 
@@ -83,39 +91,48 @@ Control what actions are blocked for each restriction:
 
 ### Example Configurations
 
-**Block weapon usage only:**
+**Block weapon usage only (silent blocking):**
 ```yaml
 restrictions:
-  - items:
+  no_swords_in_spawn:
+    items:
       - "DIAMOND_SWORD"
       - "NETHERITE_AXE"
     worlds:
       - "spawn"
     actions:
       - "vanilla all"
+    feedbackmsg: false
+    feedbackcooldown: 1
 ```
 
-**Prevent TNT placement in survival world:**
+**Prevent TNT placement with feedback message:**
 ```yaml
 restrictions:
-  - items:
+  no_tnt:
+    items:
       - "TNT"
     worlds:
       - "survival"
     actions:
       - "all"  # Can't place, drop, or use TNT
+    feedbackmsg: true
+    feedbackcooldown: 3
 ```
 
 **Block only right-click for specific items:**
 ```yaml
 restrictions:
-  - items:
+  no_shooting:
+    items:
       - "BOW"
       - "CROSSBOW"
     worlds:
       - "pvp_arena"
     actions:
       - "vanilla rightclick"  # Can't shoot, but can hold
+    feedbackmsg: true
+    feedbackcooldown: 1
 ```
 
 ### Finding Material Names
@@ -142,13 +159,7 @@ For a complete list, see the [Spigot Material List](https://hub.spigotmc.org/jav
 
 ## How It Works
 
-PreventWeaponUseX prevents item usage through event interception:
-
-1. **Interaction Blocking** - Intercepts all player interaction events (left-click, right-click)
-2. **World Checking** - Verifies if the player's current world is in the restriction list
-3. **Item Matching** - Checks if the item matches any patterns (exact or wildcard)
-4. **Usage Prevention** - Cancels the event and notifies the player
-comprehensive event interception:
+PreventWeaponUseX prevents item usage through comprehensive event interception:
 
 1. **Interaction Blocking** - Intercepts all player interaction events (left-click, right-click)
 2. **World Checking** - Verifies if the player's current world is in the restriction list
@@ -160,12 +171,13 @@ comprehensive event interception:
    - Stops dropping restricted items
    - Prevents consuming restricted food/potions
 
-This ensures players cannot use blocked items in restricted worlds according to the specific action rules you configure.
-
-## Requirements
-
-- Minecraft Server 1.21+ (Bukkit/Spigot/Paper)
-- Java 21+
+This enrestrictions to your config using unique names (e.g., `restriction1`, `no_mace`, etc.)
+2. Make sure the **world name matches exactly** (check with `/pwu configs` or console logs)
+3. Try to use those items in the specified worlds
+4. The usage should be prevented based on the action type
+5. Set `debug: true` to see detailed logs in console showing what's being blocked
+6. Use `/pwu configs` to view all loaded restrictions in-game
+7. Use `/pwu reload` to test configuration changes without restarting
 
 ## Testing
 
@@ -178,13 +190,16 @@ This ensures players cannot use blocked items in restricted worlds according to 
 
 ## Troubleshooting
 
-- **Plugin not working?** Check the server console for "PreventWeaponUseX" messages
-- **Config not loading?** Make sure the YAML syntax is correct (proper indentation)
+- **Plugin not working?** Check the server console for "PreventWeaponUseX" message, unique restriction names)
 - **Material not found?** Verify the material name matches your server version
 - **Changes not applying?** Use `/pwu reload` or restart the server
-- **Items still usable?** Check that the world name matches exactly (case-sensitive)
+- **Items still usable?** Set `debug: true` and check console logs - **world names are case-sensitive!**
 - **Action not blocking?** Verify the action type is spelled correctly (`vanilla all`, `vanilla rightclick`, `vanilla leftclick`, or `all`)
 - **Need to check config?** Use `/pwu configs` in-game to see all loaded restrictions
----
+- **World name mismatch?** Enable debug mode and attack something - the console will show the exact world name, `vanilla rightclick`, `vanilla leftclick`, or `all`)
+- **Need to check config?** Use `/pwu configs` in-game to see all loaded restrictions
 
-> Made With ❤️&☕ By Azk 💗
+## Support
+
+If you encounter any issues or have suggestions:
+- Open an issue on the [GitHub repository](https://github.com/azkhanmhd/Minecraft-Plugins)

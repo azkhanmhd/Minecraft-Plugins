@@ -102,6 +102,20 @@ This ensures players cannot craft blocked items through normal crafting tables, 
 If you encounter any issues or have suggestions:
 - Open an issue on the [GitHub repository](https://github.com/azkhanmhd/Minecraft-Plugins)
 
+## 📝 **License**
+
+These plugins are **open for anyone to use** on their Minecraft servers.
+
+**❌ Prohibited:**
+- Selling or redistributing these plugins
+- Posting JAR files online or on other platforms
+- Claiming ownership or authorship
+
+**Violations of these terms will result in license revocation and potential legal action.**
+
+For custom development or commercial licensing, contact via [azkhan.org](https://azkhan.org)
+
+---
 ---
 
 > Made With ❤️&☕ By Azk 💗

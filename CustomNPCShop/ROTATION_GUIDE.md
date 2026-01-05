@@ -197,3 +197,7 @@ Note: set1 appears 3x more often than set3
 **Colors not showing?**
 - Use `&` not `§` in config
 - Plugin converts `&` to `§` automatically
+
+---
+
+> Made With ❤️&☕ By Azk 💗

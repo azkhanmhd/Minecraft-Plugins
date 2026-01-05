@@ -1,6 +1,6 @@
 # CustomNPCShop
 
-[![Minecraft](https://img.shields.io/badge/Minecraft-1.21.5-green.svg)](https://www.minecraft.net/)
+[![Minecraft](https://img.shields.io/badge/Minecraft-1.21+-green.svg)](https://www.minecraft.net/)
 [![Paper](https://img.shields.io/badge/Paper-Compatible-blue.svg)](https://papermc.io/)
 [![Citizens](https://img.shields.io/badge/Citizens-Required-orange.svg)](https://www.spigotmc.org/resources/citizens.13811/)
 [![MMOItems](https://img.shields.io/badge/MMOItems-Compatible-purple.svg)](https://www.spigotmc.org/resources/mmoitems.39267/)
@@ -17,7 +17,7 @@ A high-performance Minecraft plugin that transforms Citizens NPCs into intellige
 - **Dynamic Recipe Building** - Creates merchant recipes per-player using their exact inventory items
 - **Seamless Item Renewal** - Automatically rebuilds MMOItems with fresh revision IDs before shop opens (completely silent)
 - **Material+CustomModelData Validation** - Ignores NBT differences, works with ANY revision ID
-- **Cursor Stacking** - Vanilla-like trading experience with proper item stacking on cursor
+- **100% Vanilla Trading** - Zero custom handling, Minecraft does all the work (consumption, rewards, stacking, sounds)
 
 ### **Zero Configuration Setup**
 - **Auto-Trait Addition** - NPCs automatically get shop traits when clicked (no manual setup)
@@ -44,10 +44,10 @@ A high-performance Minecraft plugin that transforms Citizens NPCs into intellige
 
 | Dependency | Version | Required |
 |------------|---------|----------|
-| **Minecraft** | 1.21.5 | ✅ Yes |
+| **Minecraft** | 1.21+ | ✅ Yes |
 | **Paper/Spigot** | 1.21+ | ✅ Yes |
 | **Citizens** | Latest | ✅ Yes |
-| **MMOItems** | 1.21.5+ | ⚠️ Optional |
+| **MMOItems** | Latest | ⚠️ Optional |
 | **MythicLib** | Latest | ⚠️ If using MMOItems |
 
 ---
@@ -74,9 +74,7 @@ trades:
   legendary_upgrade:
     priceItem1:
       displayItem: "mmoitems CUSTOM_MATERIAL UNIDENTIFIED_SHARD_NORMAL"
-      check:
-        materialAndCmd: "RABBIT_HIDE:16"
-        amount: 2
+      amount: 2
     
     rewardItem:
       item: "mmoitems CUSTOM_MATERIAL UNIDENTIFIED_ARMOR_LEGENDARY"
@@ -100,22 +98,23 @@ That's it! Players can now trade with the NPC.
 trades:
   trade_id:
     priceItem1:              # First payment item (required)
-      displayItem: "..."     # What shows in GUI
-      check:
-        materialAndCmd: "MATERIAL:CMD"  # What to check in inventory
-        amount: 2
+      displayItem: "..."     # The item to renew and check
+      amount: 2              # How many required
     
     priceItem2: null         # Second payment (optional)
     
     rewardItem:              # What player receives
       item: "..."
       amount: 1
-
-rotation:                    # Optional rotation system
-  enableRotation: false
-  displayPerRotation: 5
-  rotationTimer: "24h"
 ```
+
+**How it works:**
+1. `displayItem` is renewed using MMOItems/ItemBuilder
+2. Material + CustomModelData extracted from renewed item
+3. Player's inventory checked for matching Material+CMD
+4. Amount validated
+
+**No manual Material checking needed!** The system automatically extracts it from the displayItem.
 
 ### **Item Format Examples**
 
@@ -132,23 +131,204 @@ displayItem: "DIAMOND"
 **Custom Model Data:**
 ```yaml
 displayItem: "RABBIT_HIDE:16"
-materialAndCmd: "RABBIT_HIDE:16"
 ```
 
----
+### **Rotation Configuration**
 
-## 🎓 **How It Works**
+The rotation system allows shops to automatically cycle through different sets of trades, keeping your economy dynamic and encouraging players to check back regularly.
 
-### **The Problem**
-MMOItems assigns revision IDs to items. When revision IDs change, vanilla Minecraft's trading system grays out trades because NBT doesn't match exactly.
+**Create file: `plugins/CustomNPCShop/shops/npc_<id>/rotationSetup.yml`**
 
-### **The Solution**
-1. **Player clicks NPC** → Plugin silently renews all matching items in inventory with fresh revision IDs (using ItemBuilder API)
-2. **Shop opens** → Dynamic recipes are built using the player's ACTUAL inventory items as ingredients
-3. **Trade completes** → Vanilla accepts the trade because ingredients are exact matches
-4. **Reward given** → Fresh item placed on cursor with proper stacking
+```yaml
+# Organize trades into groups
+groups:
+  common:
+    - trade1
+    - trade2
+  rare:
+    - trade3
+    - trade4
 
-**Result:** Trades work seamlessly with ANY revision ID, zero player-visible lag.
+# Choose rotation type
+rotationType:
+  type: timeBased
+  schedule:
+    "08:00": { show: common, message: "&aEarly bird deals! %timer%" }
+    "12:00": { show: rare, message: "&6Premium items available %timer%" }
+    "18:00": { show: none, message: "&cShop closed %timer%" }
+
+# Message when shop is closed (none state)
+noneMessage: "&cThis shop is currently unavailable. Come back later!"
+noneSound: ENTITY_VILLAGER_NO
+```
+
+#### **How It Works**
+
+**Groups** organize your trades together. You reference these groups in your rotation type.
+
+**Three Rotation Modes:**
+
+1. **Sequential** - Cycles through groups in order
+2. **Random** - Randomly picks a group each rotation  
+3. **Time-Based** - Shows specific groups at specific times of day
+
+#### **Sequential Mode**
+
+Rotates through groups in order with a timer:
+
+```yaml
+rotationType:
+  type: sequential
+  order:
+    - common          # Shows all trades in common group
+    - rare            # Then shows all trades in rare group
+    - none            # Optional: Shop unavailable
+  eachRotationTimer: 30m
+  rotationMessage: "&6Next rotation in: &e%timer%"
+```
+
+**Example:** If you have 3 groups and set `eachRotationTimer: 1h`, it shows:
+- Hour 1: common group trades
+- Hour 2: rare group trades  
+- Hour 3: none (shop closed)
+- Hour 4: back to common group
+
+#### **Random Mode**
+
+Randomly selects a group each rotation:
+
+```yaml
+rotationType:
+  type: random
+  order:
+    - common
+    - rare
+    - seasonal
+  eachRotationTimer: 2h
+  rotationMessage: "&bRandom shop: &e%timer% until change"
+```
+
+Uses seed-based randomness for consistency across server restarts.
+
+#### **Time-Based Mode**
+
+Shows specific groups at specific server times:
+
+```yaml
+rotationType:
+  type: timeBased
+  schedule:
+    "00:00": { show: none, message: "&cShop closed until morning" }
+    "08:00": { show: common, message: "&aMorning deals: %timer%" }
+    "12:00": { show: rare, message: "&6Noon specials: %timer%" }
+    "18:00": { show: seasonal, message: "&dEvening items: %timer%" }
+    "22:00": { show: none, message: "&cShop closing soon" }
+```
+
+**How it works:**
+- Checks current server time
+- Finds matching time slot
+- Shows the group specified in `show:`
+- Updates automatically when next time slot begins
+
+#### **Advanced Options**
+
+**Show specific trades instead of whole groups:**
+```yaml
+rotationType:
+  type: sequential
+  order:
+    - common                    # All trades in common group
+    - [trade5, trade6]          # ONLY these 2 specific trades
+    - rare                      # All trades in rare group
+  eachRotationTimer: 45m
+```
+
+**Timer formats:**
+- `20s` = 20 seconds
+- `5m` = 5 minutes
+- `2h` = 2 hours
+- `1d` = 1 day
+
+**Placeholder:**
+- `%timer%` shows time remaining until next rotation
+
+#### **Example Setups**
+
+**Daily shop rotation:**
+```yaml
+groups:
+  morning: [coffee, bread]
+  lunch: [sandwich, soup]
+  dinner: [steak, wine]
+
+rotationType:
+  type: timeBased
+  schedule:
+    "00:00": { show: none, message: "&cClosed" }
+    "08:00": { show: morning, message: "&aBreakfast: %timer%" }
+    "12:00": { show: lunch, message: "&eLunch: %timer%" }
+    "18:00": { show: dinner, message: "&6Dinner: %timer%" }
+    "22:00": { show: none, message: "&cClosed" }
+
+noneMessage: "&cKitchen is closed!"
+noneSound: ENTITY_VILLAGER_NO
+```
+
+**Mystery shop (random hourly):**
+```yaml
+groups:
+  set1: [common1, common2]
+  set2: [rare1, rare2]
+  set3: [super_rare]
+
+rotationType:
+  type: random
+  order:
+    - set1
+    - set1
+    - set1    # Appears 3x more often
+    - set2
+    - set2    # Appears 2x more often
+    - set3    # Appears 1x
+  eachRotationTimer: 1h
+  rotationMessage: "&d&lMYSTERY SHOP &r&e(%timer%)"
+```
+
+**Weekly rotation (sequential):**
+```yaml
+groups:
+  monday: [item1, item2]
+  tuesday: [item3, item4]
+  wednesday: [item5, item6]
+  thursday: [item7, item8]
+  friday: [item9, item10]
+  saturday: [item11, item12]
+  sunday: [item13, item14]
+
+rotationType:
+  type: sequential
+  order:
+    - monday
+    - tuesday
+    - wednesday
+    - thursday
+    - friday
+    - saturday
+    - sunday
+  eachRotationTimer: 1d
+  rotationMessage: "&6Day: &e%timer%"
+```
+
+**Disable rotation:**
+Simply don't create the `rotationSetup.yml` file, or leave `groups:` empty.
+
+#### **Files**
+
+- **settings.yml** - Contains your trades (trade1, trade2, etc.)
+- **rotationSetup.yml** - Contains rotation configuration (groups, schedule, timers)
+
+See [ROTATION_GUIDE.md](ROTATION_GUIDE.md) for complete documentation.
 
 ---
 
@@ -175,11 +355,46 @@ MMOItems assigns revision IDs to items. When revision IDs change, vanilla Minecr
 | Command | Description | Permission |
 |---------|-------------|------------|
 | `/cns create <name>` | Create shop NPC | `customnpcshop.dev` |
-| `/cns delete <npc-id>` | Delete shop | `customnpcshop.dev` |
-| `/cns list` | List all shops | `customnpcshop.use` |
-| `/cns info <npc-id>` | Show shop info | `customnpcshop.use` |
-| `/cns edit <npc-id>` | Get settings.yml path | `customnpcshop.dev` |
-| `/cns reload` | Reload configs | `customnpcshop.dev` |
+| `/cns remove <npc-id>` | Delete shop | `customnpcshop.dev` |
+| `/cns list` | List all shops with NPC names | `customnpcshop.use` |
+| `/cns info` | Show plugin credits & support | `customnpcshop.use` |
+| `/cns edit <npc-id>` | Open item editor GUI | `customnpcshop.dev` |
+| `/cns toggle <id> <on\|off>` | Enable/disable shop | `customnpcshop.dev` |
+| `/cns npc <id> info` | Show shop trades | `customnpcshop.use` |
+| `/cns npc <id> name <name>` | Set NPC name | `customnpcshop.dev` |
+| `/cns npc <id> visible <true\|false>` | Set NPC name visibility | `customnpcshop.dev` |
+| `/cns debug` | Toggle debug mode | `customnpcshop.dev` |
+| `/cns reload` | Reload all shop configs | `customnpcshop.dev` |
+
+### **List Command**
+`/cns list` - Shows all shops with active status and NPC display names
+
+**Example Output:**
+```
+━━━━━━━ CNS Shops ━━━━━━━
+[✓] NPC 83 - Blacksmith Bob
+[✗] NPC 91 - Potion Master
+━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+### **Shop Info Command**
+`/cns npc <npc-id> info` - Shows detailed trade information for a specific shop
+
+**Example Output:**
+```
+══════════════════════════════
+   Shop Info: NPC 83
+══════════════════════════════
+
+Trades:
+▪ trade1
+  Price: Unidentified Shard Normal x4
+  Reward: Unidentified Armor Legendary x1
+
+▪ trade2
+  Price: Diamond x10
+  Reward: Emerald x5
+```
 
 ---
 
@@ -207,13 +422,6 @@ customnpcshop.dev      # Developer commands (default: op)
 ### **Memory leaks?**
 ✓ Fixed! Players auto-cleanup on disconnect
 
-### **Enable debug mode:**
-```yaml
-# config.yml
-debug:
-  enabled: true
-```
-
 ---
 
 ## 📁 **File Structure**
@@ -233,57 +441,17 @@ plugins/CustomNPCShop/
 
 ---
 
-## 🔧 **Technical Architecture**
-
-### **Core Systems**
-
-**Dynamic Recipe Building** ([NewShopGUI.java](src/main/java/me/azk/customNPCShop/gui/NewShopGUI.java))
-- Scans player inventory for matching items
-- Creates `MerchantRecipe` using player's exact items as ingredients
-- Bypasses vanilla NBT validation
-
-**Seamless Renewal** ([ShopManager.java](src/main/java/me/azk/customNPCShop/shop/ShopManager.java))
-- Two-pass system: Collect → Rebuild
-- Uses MMOItems `ItemBuilder` API
-- Preserves exact slots and amounts
-- Zero commands = zero player messages
-
-**Auto-Trait System** ([NPCListener.java](src/main/java/me/azk/customNPCShop/listener/NPCListener.java))
-- Detects missing traits on NPC click
-- Auto-adds `customshop` trait
-- Traits persist through restarts
-
-**Memory Management**
-- UUID-based player tracking (prevents memory leaks)
-- Automatic cleanup on disconnect
-- Auto-save task cancellation on disable
-
----
-
 ## 🌟 **Advanced Features**
-
-### **Rotation System**
-```yaml
-rotation:
-  enableRotation: true
-  displayPerRotation: 5
-  rotationTimer: "24h"
-```
-Automatically rotates available trades every 24 hours.
 
 ### **Multiple Price Items**
 ```yaml
 priceItem1:
   displayItem: "EMERALD"
-  check:
-    materialAndCmd: "EMERALD:0"
-    amount: 10
+  amount: 10
 
 priceItem2:
   displayItem: "GOLD_INGOT"
-  check:
-    materialAndCmd: "GOLD_INGOT:0"
-    amount: 5
+  amount: 5
 ```
 
 ---
@@ -306,13 +474,13 @@ For issues or suggestions, please contact via:
 ## 📈 **Changelog**
 
 ### **v1.0 (January 2026)**
-- ✅ Dynamic recipe building system
-- ✅ Seamless MMOItems renewal
-- ✅ Auto-trait addition
-- ✅ Memory leak fixes
-- ✅ Cursor stacking support
+- Dynamic recipe building system
+- Seamless MMOItems renewal
+- Auto-trait addition on NPC click
+- Memory leak fixes
+- Trade rotation system (sequential/random/time-based)
+- 100% vanilla trade handling
 
 ---
 
 > Made With ❤️&☕ By Azk 💗
-

@@ -1,6 +1,6 @@
 # Custom Villager Breeding System
 
-**Production-level Minecraft plugin for complete control over villager breeding**
+**Minecraft plugin for complete control over villager breeding**
 
 Version: 1.0 | API: 1.21 | Minecraft Version: 1.21+ | Author: Azk
 

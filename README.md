@@ -63,6 +63,23 @@ Prevent players from using specific weapons or tools with permission controls.
 
 ---
 
+### [CustomVillagerBreedingSystem](CustomVillagerBreedingSystem/)
+**Advanced Villager Breeding System**
+
+Can Be Used If Minecraft Villager Breeding Causes Lag.
+
+**Key Features:**
+- No Lag
+- Can Customize Literally Everything On How It Works 
+- Customizable Messages
+- Hot reload Support
+
+**Requirements:** Paper 1.21+
+
+[📖 Documentation](CustomVillagerBreedingSystem/README.md#vustomvillagerbreedingsystem)
+
+---
+
 ## 🚀 **Quick Start**
 
 1. Download the desired plugin's JAR file
